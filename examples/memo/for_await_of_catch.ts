@@ -12,18 +12,34 @@
         })
     )
 
+  async function* gen(
+    p: Promise<string>[]
+  ): AsyncGenerator<string, void, void> {
+    try {
+      for await (let t of p) {
+        yield t
+      }
+    } catch (r) {
+      console.log(`generator catch ${r}`)
+    } finally {
+      console.log('generator done')
+    }
+  }
+
   await (async () => {
     console.log('catch in top of chain')
+    const timeout = 200
     const p = promiseArray()
     const r = new Promise<string>((resolve, reject) => {
-      setTimeout(() => reject('rejected'), 200)
+      setTimeout(() => reject('rejected'), timeout)
     })
     const c = r.catch((r) => {
       console.log(`catch ${r}`)
     })
     p.splice(4, 0, c as any)
+    const g = gen(p)
     try {
-      for await (let t of p) {
+      for await (let t of g) {
         console.log(`${t}`)
       }
     } catch (r) {
@@ -34,16 +50,18 @@
 
   await (async () => {
     console.log('catch in another chain')
+    const timeout = 200
     const p = promiseArray()
     const r = new Promise<string>((resolve, reject) => {
-      setTimeout(() => reject('rejected'), 200)
+      setTimeout(() => reject('rejected'), timeout)
     })
     r.catch((r) => {
       console.log(`catch ${r}`)
     })
     p.splice(4, 0, r)
+    const g = gen(p)
     try {
-      for await (let t of p) {
+      for await (let t of g) {
         console.log(`${t}`)
       }
     } catch (r) {
@@ -53,7 +71,7 @@
   console.log('---')
 })()
 
-// $ node --loader ts-node/esm examples/memo/async_generator_catch.ts
+// $ node --loader ts-node/esm examples/memo/for_await_of_catch.ts
 // catch in top of chain
 // done-0
 // done-1
@@ -62,6 +80,7 @@
 // done-3
 // undefined
 // done-4
+// generator done
 // ---
 // catch in another chain
 // done-0
@@ -69,4 +88,6 @@
 // catch rejected
 // done-2
 // done-3
-// for await...of rejected
+// generator catch rejected
+// generator done
+// ---
