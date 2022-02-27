@@ -12,15 +12,9 @@
         })
     )
 
-  async function* gen(timeout: number): AsyncGenerator<string, void, void> {
-    const p = promiseArray()
-    p.splice(
-      4,
-      0,
-      new Promise<string>((resolve, reject) => {
-        setTimeout(() => reject('rejected'), timeout)
-      })
-    )
+  async function* gen(
+    p: Promise<string>[]
+  ): AsyncGenerator<string, void, void> {
     try {
       for await (let t of p) {
         yield t
@@ -35,7 +29,17 @@
   await (async () => {
     console.log('timeout = 1000')
     try {
-      for await (let t of gen(1000)) {
+      const timeout = 1000
+      const p = promiseArray()
+      p.splice(
+        4,
+        0,
+        new Promise<string>((resolve, reject) => {
+          setTimeout(() => reject('rejected'), timeout)
+        })
+      )
+      const g = gen(p)
+      for await (let t of g) {
         console.log(`${t}`)
       }
     } catch (r) {
@@ -46,7 +50,17 @@
   await (async () => {
     console.log('timeout = 200')
     try {
-      for await (let t of gen(200)) {
+      const timeout = 200
+      const p = promiseArray()
+      p.splice(
+        4,
+        0,
+        new Promise<string>((resolve, reject) => {
+          setTimeout(() => reject('rejected'), timeout)
+        })
+      )
+      const g = gen(p)
+      for await (let t of g) {
         console.log(`${t}`)
       }
     } catch (r) {
